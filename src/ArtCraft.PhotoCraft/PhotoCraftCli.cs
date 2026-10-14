@@ -15,8 +15,8 @@ namespace ArtCraft.PhotoCraft;
 /// <item>The application directory itself: a publish for one runtime identifier (<c>-r linux-x64</c>)
 /// copies the binary there.</item>
 /// </list>
-/// The application directory is <see cref="AppContext.BaseDirectory"/>, then the directory of this assembly
-/// when it differs (for example when it is loaded as a plugin).
+/// The application directory is <see cref="AppContext.BaseDirectory"/>, which is also the executable's directory
+/// in a single-file app.
 /// </remarks>
 public static class PhotoCraftCli
 {
@@ -55,7 +55,7 @@ public static class PhotoCraftCli
         var os = GetOperatingSystem();
         var path = Locate(
             Environment.GetEnvironmentVariable(PathEnvironmentVariable),
-            GetSearchDirectories(),
+            AppContext.BaseDirectory,
             GetRuntimeIdentifier(os, RuntimeInformation.OSArchitecture),
             os == "win" ? "photocraft-cli.exe" : "photocraft-cli");
         if (os != "win")
@@ -68,7 +68,7 @@ public static class PhotoCraftCli
 
     internal static string Locate(
         string? overridePath,
-        IEnumerable<string> searchDirectories,
+        string appDirectory,
         string? runtimeIdentifier,
         string fileName)
     {
@@ -89,27 +89,23 @@ public static class PhotoCraftCli
                 $"Install photocraft-cli yourself and set {PathEnvironmentVariable} to its path.");
         }
 
-        var probed = new List<string>();
-        foreach (var directory in searchDirectories)
+        string[] candidates =
+        [
+            Path.Combine(appDirectory, "runtimes", runtimeIdentifier, "native", fileName),
+            Path.Combine(appDirectory, fileName),
+        ];
+        foreach (var candidate in candidates)
         {
-            foreach (var candidate in new[]
+            if (File.Exists(candidate))
             {
-                Path.Combine(directory, "runtimes", runtimeIdentifier, "native", fileName),
-                Path.Combine(directory, fileName),
-            })
-            {
-                probed.Add(candidate);
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
+                return candidate;
             }
         }
 
         throw new FileNotFoundException(
             $"{fileName} was not found. Reference the {RuntimePackage} package, or {RuntimePackage}.{runtimeIdentifier} " +
             $"for this platform only, or set {PathEnvironmentVariable}. Looked in:{Environment.NewLine}  " +
-            string.Join(Environment.NewLine + "  ", probed),
+            string.Join(Environment.NewLine + "  ", candidates),
             fileName);
     }
 
@@ -135,26 +131,6 @@ public static class PhotoCraftCli
         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
         null;
-
-    private static IEnumerable<string> GetSearchDirectories()
-    {
-        var baseDirectory = AppContext.BaseDirectory;
-        yield return baseDirectory;
-
-        // Empty in a single-file app, where AppContext.BaseDirectory already covers it.
-#pragma warning disable IL3000
-        var assemblyLocation = typeof(PhotoCraftCli).Assembly.Location;
-#pragma warning restore IL3000
-        var assemblyDirectory = string.IsNullOrEmpty(assemblyLocation) ? null : Path.GetDirectoryName(assemblyLocation);
-        if (assemblyDirectory is not null &&
-            !string.Equals(
-                Path.GetFullPath(assemblyDirectory).TrimEnd(Path.DirectorySeparatorChar),
-                Path.GetFullPath(baseDirectory).TrimEnd(Path.DirectorySeparatorChar),
-                StringComparison.Ordinal))
-        {
-            yield return assemblyDirectory;
-        }
-    }
 
     private static void EnsureExecutable(string path)
     {

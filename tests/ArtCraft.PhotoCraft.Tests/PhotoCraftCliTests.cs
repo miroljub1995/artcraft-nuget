@@ -60,21 +60,12 @@ public sealed class PhotoCraftCliTests : IDisposable
     }
 
     [TestMethod]
-    public void Searches_later_directories_when_the_first_has_no_binary()
-    {
-        var other = Path.Combine(_root, "plugin");
-        var expected = CreateFile("plugin", "runtimes", "linux-x64", "native", FileName);
-
-        Assert.AreEqual(expected, PhotoCraftCli.Locate(null, [_root, other], "linux-x64", FileName));
-    }
-
-    [TestMethod]
     public void Override_wins_over_the_packaged_binary()
     {
         CreateFile(FileName);
         var expected = CreateFile("custom", FileName);
 
-        Assert.AreEqual(expected, PhotoCraftCli.Locate(expected, [_root], "linux-x64", FileName));
+        Assert.AreEqual(expected, PhotoCraftCli.Locate(expected, _root, "linux-x64", FileName));
     }
 
     [TestMethod]
@@ -83,7 +74,7 @@ public sealed class PhotoCraftCliTests : IDisposable
         CreateFile(FileName);
         var missing = Path.Combine(_root, "missing", FileName);
 
-        var e = Assert.ThrowsExactly<FileNotFoundException>(() => PhotoCraftCli.Locate(missing, [_root], "linux-x64", FileName));
+        var e = Assert.ThrowsExactly<FileNotFoundException>(() => PhotoCraftCli.Locate(missing, _root, "linux-x64", FileName));
         Assert.Contains(PhotoCraftCli.PathEnvironmentVariable, e.Message, StringComparison.Ordinal);
     }
 
@@ -102,7 +93,7 @@ public sealed class PhotoCraftCliTests : IDisposable
         Assert.ThrowsExactly<PlatformNotSupportedException>(() => Locate(null));
 
     private string Locate(string? runtimeIdentifier) =>
-        PhotoCraftCli.Locate(null, [_root], runtimeIdentifier, FileName);
+        PhotoCraftCli.Locate(null, _root, runtimeIdentifier, FileName);
 
     private string CreateFile(params string[] relativePath)
     {
