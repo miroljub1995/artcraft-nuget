@@ -1,0 +1,42 @@
+<Project>
+  <!--
+    The upstream PhotoCraft release these packages redistribute.
+    Regenerate this file with `eng/update-photocraft.sh <version>`; don't edit the hashes by hand.
+
+    Each PhotoCraftAsset is keyed by its .NET runtime identifier:
+      Archive     release asset on https://github.com/storytold/photocraft/releases
+      Sha256      pinned digest of the archive (checked before anything is extracted)
+      Executable  path of the CLI inside the archive
+  -->
+  <PropertyGroup>
+    <PhotoCraftVersion>0.8.2</PhotoCraftVersion>
+    <PhotoCraftReleaseUrl>https://github.com/storytold/photocraft/releases/download/v$(PhotoCraftVersion)</PhotoCraftReleaseUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PhotoCraftAsset Include="linux-x64"
+                     Archive="photocraft-$(PhotoCraftVersion)-linux-x86_64.tar.gz"
+                     Sha256="16c3089976eee2d290dbe73986db4835c1ec5a043c5c16b017b24848ff5ea827"
+                     Executable="photocraft-$(PhotoCraftVersion)-linux-x86_64/bin/photocraft-cli" />
+    <PhotoCraftAsset Include="linux-arm64"
+                     Archive="photocraft-$(PhotoCraftVersion)-linux-aarch64.tar.gz"
+                     Sha256="f3920f31406574d1d3f9ca152d46703c8e7f3b504e0d2b2e394f0ad10f0df348"
+                     Executable="photocraft-$(PhotoCraftVersion)-linux-aarch64/bin/photocraft-cli" />
+    <PhotoCraftAsset Include="osx"
+                     Archive="photocraft-cli-$(PhotoCraftVersion)-macos-universal.zip"
+                     Sha256="38fd0463f20bc6600aac75ad5e9dd5ec4c35ef23b1dd86ea18a390580c074eac"
+                     Executable="photocraft-cli-$(PhotoCraftVersion)-macos-universal/photocraft-cli" />
+    <PhotoCraftAsset Include="win-x64"
+                     Archive="photocraft-$(PhotoCraftVersion)-windows-x64-portable.zip"
+                     Sha256="242acd4134e7947b462d68748b32a6f038fa97099601da950652489690f81799"
+                     Executable="photocraft-$(PhotoCraftVersion)-windows-x64-portable/photocraft-cli.exe" />
+    <PhotoCraftAsset Include="win-x86"
+                     Archive="photocraft-$(PhotoCraftVersion)-windows-x86-portable.zip"
+                     Sha256="db3c497897d09d2acf7905deeacb4a00dd42f522f601bbb9ea8a7d806078b505"
+                     Executable="photocraft-$(PhotoCraftVersion)-windows-x86-portable/photocraft-cli.exe" />
+    <PhotoCraftAsset Include="win-arm64"
+                     Archive="photocraft-$(PhotoCraftVersion)-windows-arm64-portable.zip"
+                     Sha256="9a90b6c818db33b82234475a9785bb6e2727528a4f286e71ea9ecaace0ea5877"
+                     Executable="photocraft-$(PhotoCraftVersion)-windows-arm64-portable/photocraft-cli.exe" />
+  </ItemGroup>
+</Project>

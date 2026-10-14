@@ -1,0 +1,25 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!--
+    One package per runtime identifier, each holding photocraft-cli under runtimes/<rid>/native/.
+    A project's name gives its runtime identifier: ArtCraft.PhotoCraft.Runtime.linux-x64 is linux-x64.
+  -->
+  <PropertyGroup>
+    <PhotoCraftRid>$(MSBuildProjectName.Replace('ArtCraft.PhotoCraft.Runtime.', ''))</PhotoCraftRid>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- No lib/ folder is intended: the package only carries a native executable. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+
+    <Description>The PhotoCraft command-line tool (photocraft-cli) $(PhotoCraftVersion) for $(PhotoCraftRid), unmodified from the official release at https://github.com/storytold/photocraft. Use ArtCraft.PhotoCraft to locate it. Unofficial packaging, not affiliated with the PhotoCraft authors.</Description>
+    <!-- The binary's licence: PhotoCraft is MIT OR Apache-2.0 and embeds OFL-1.1 fonts. -->
+    <PackageLicenseExpression>(MIT OR Apache-2.0) AND OFL-1.1</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 ArtCraft Team and the PhotoCraft contributors</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>$(PackageTags);$(PhotoCraftRid)</PackageTags>
+  </PropertyGroup>
+</Project>

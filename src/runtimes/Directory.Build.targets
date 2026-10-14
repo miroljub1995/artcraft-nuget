@@ -1,0 +1,75 @@
+<Project>
+  <!--
+    Download the upstream release archive for $(PhotoCraftRid), check it against the digest pinned in
+    eng/PhotoCraft.props, and stage photocraft-cli plus its licences for packing.
+  -->
+  <PropertyGroup>
+    <PhotoCraftDownloadDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsPath)', 'download', '$(PhotoCraftVersion)'))</PhotoCraftDownloadDirectory>
+    <PhotoCraftStageDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'photocraft'))</PhotoCraftStageDirectory>
+    <_PhotoCraftStamp>$(PhotoCraftStageDirectory)photocraft.stamp</_PhotoCraftStamp>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="/" />
+    <None Include="$(MSBuildThisFileDirectory)PhotoCraft.Runtime.targets" Pack="true" PackagePath="buildTransitive/$(PackageId).targets" />
+  </ItemGroup>
+
+  <Target Name="_PhotoCraftResolveAsset">
+    <ItemGroup>
+      <_PhotoCraftAsset Include="@(PhotoCraftAsset->WithMetadataValue('Identity', '$(PhotoCraftRid)'))" />
+    </ItemGroup>
+    <Error Condition="'@(_PhotoCraftAsset)' == ''" Text="eng/PhotoCraft.props has no PhotoCraftAsset for '$(PhotoCraftRid)'." />
+    <PropertyGroup>
+      <_PhotoCraftArchive>@(_PhotoCraftAsset->'%(Archive)')</_PhotoCraftArchive>
+      <_PhotoCraftSha256>@(_PhotoCraftAsset->'%(Sha256)')</_PhotoCraftSha256>
+      <_PhotoCraftExecutable>@(_PhotoCraftAsset->'%(Executable)')</_PhotoCraftExecutable>
+      <_PhotoCraftExecutableName>$([System.IO.Path]::GetFileName('$(_PhotoCraftExecutable)'))</_PhotoCraftExecutableName>
+      <_PhotoCraftArchivePath>$(PhotoCraftDownloadDirectory)$(_PhotoCraftArchive)</_PhotoCraftArchivePath>
+      <_PhotoCraftExtractDirectory>$(PhotoCraftStageDirectory)extract/</_PhotoCraftExtractDirectory>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="AcquirePhotoCraftCli"
+          BeforeTargets="Build"
+          DependsOnTargets="_PhotoCraftResolveAsset"
+          Inputs="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(RepoRoot)eng/PhotoCraft.props"
+          Outputs="$(_PhotoCraftStamp)">
+    <DownloadFile Condition="!Exists('$(_PhotoCraftArchivePath)')"
+                  SourceUrl="$(PhotoCraftReleaseUrl)/$(_PhotoCraftArchive)"
+                  DestinationFolder="$(PhotoCraftDownloadDirectory)"
+                  Retries="3" />
+
+    <GetFileHash Files="$(_PhotoCraftArchivePath)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_PhotoCraftActualSha256" />
+    </GetFileHash>
+    <!-- Delete a bad download so the next build fetches it again. Conditions compare case-insensitively. -->
+    <Delete Condition="'$(_PhotoCraftActualSha256)' != '$(_PhotoCraftSha256)'" Files="$(_PhotoCraftArchivePath)" />
+    <Error Condition="'$(_PhotoCraftActualSha256)' != '$(_PhotoCraftSha256)'"
+           Text="$(_PhotoCraftArchive) has SHA-256 $(_PhotoCraftActualSha256), expected $(_PhotoCraftSha256) (eng/PhotoCraft.props). The file was deleted." />
+
+    <RemoveDir Directories="$(PhotoCraftStageDirectory)" />
+    <Unzip Condition="$(_PhotoCraftArchive.EndsWith('.zip'))" SourceFiles="$(_PhotoCraftArchivePath)" DestinationFolder="$(_PhotoCraftExtractDirectory)" />
+    <MakeDir Condition="$(_PhotoCraftArchive.EndsWith('.tar.gz'))" Directories="$(_PhotoCraftExtractDirectory)" />
+    <!-- tar ships with Linux, macOS and Windows 10+. -->
+    <Exec Condition="$(_PhotoCraftArchive.EndsWith('.tar.gz'))" Command="tar -xzf &quot;$(_PhotoCraftArchivePath)&quot; -C &quot;$(_PhotoCraftExtractDirectory)&quot;" />
+
+    <Error Condition="!Exists('$(_PhotoCraftExtractDirectory)$(_PhotoCraftExecutable)')"
+           Text="$(_PhotoCraftArchive) has no $(_PhotoCraftExecutable); the upstream layout changed, update eng/PhotoCraft.props." />
+    <ItemGroup>
+      <_PhotoCraftLicense Include="$(_PhotoCraftExtractDirectory)**/LICENSE-*;$(_PhotoCraftExtractDirectory)**/OFL-*.txt" />
+    </ItemGroup>
+    <Error Condition="'@(_PhotoCraftLicense)' == ''" Text="$(_PhotoCraftArchive) has no licence files." />
+    <Copy SourceFiles="$(_PhotoCraftExtractDirectory)$(_PhotoCraftExecutable)" DestinationFolder="$(PhotoCraftStageDirectory)bin" />
+    <Copy SourceFiles="@(_PhotoCraftLicense)" DestinationFolder="$(PhotoCraftStageDirectory)licenses" />
+    <!-- The extracted archive also holds the ~90 MB GUI app; don't keep it around. -->
+    <RemoveDir Directories="$(_PhotoCraftExtractDirectory)" />
+    <WriteLinesToFile File="$(_PhotoCraftStamp)" Lines="$(_PhotoCraftSha256)" Overwrite="true" />
+  </Target>
+
+  <Target Name="_PhotoCraftAddPackageFiles" BeforeTargets="_GetPackageFiles" DependsOnTargets="AcquirePhotoCraftCli">
+    <ItemGroup>
+      <None Include="$(PhotoCraftStageDirectory)bin/$(_PhotoCraftExecutableName)" Pack="true" PackagePath="runtimes/$(PhotoCraftRid)/native/" />
+      <None Include="$(PhotoCraftStageDirectory)licenses/*" Pack="true" PackagePath="licenses/" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,42 @@
+<Project>
+  <!--
+    Shipped in every ArtCraft.PhotoCraft.Runtime.<rid> package as buildTransitive/<package id>.targets.
+    Every package defines the same targets, so the last one imported runs once for all of them.
+  -->
+
+  <!--
+    .NET Framework projects don't use the runtimes/ folder of a package, so copy this package's binary
+    to the same place .NET does: <output>/runtimes/<rid>/native/.
+  -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/**/*"
+          Link="runtimes/%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          Visible="false" />
+  </ItemGroup>
+
+  <!-- Single-file publish: keep photocraft-cli next to the app, where ArtCraft.PhotoCraft looks for it. -->
+  <Target Name="_PhotoCraftExcludeFromSingleFile" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Condition="'%(Filename)' == 'photocraft-cli'">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+  <!--
+    NuGet doesn't keep file permissions, so photocraft-cli comes out of the package without its execute
+    bit. Restore it wherever the build or publish copied it. (Building on Windows for Linux can't do this;
+    ArtCraft.PhotoCraft then sets the bit at run time.)
+  -->
+  <Target Name="_PhotoCraftSetExecuteBit" AfterTargets="CopyFilesToOutputDirectory;Publish" Condition="'$(OS)' != 'Windows_NT'">
+    <ItemGroup>
+      <_PhotoCraftCandidate Include="$(OutDir)photocraft-cli;$(OutDir)runtimes/*/native/photocraft-cli" />
+      <_PhotoCraftCandidate Include="$(PublishDir)photocraft-cli;$(PublishDir)runtimes/*/native/photocraft-cli" Condition="'$(PublishDir)' != ''" />
+      <_PhotoCraftExecutable Include="@(_PhotoCraftCandidate->Exists()->Distinct())" />
+    </ItemGroup>
+    <Exec Condition="'@(_PhotoCraftExecutable)' != ''"
+          Command="chmod +x @(_PhotoCraftExecutable->'&quot;%(FullPath)&quot;', ' ')"
+          ContinueOnError="WarnAndContinue" />
+  </Target>
+</Project>

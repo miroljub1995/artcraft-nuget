@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <!--
+    Meta-package: no files of its own, it depends on the runtime package of every platform.
+    .NET Framework only runs on Windows, so it gets only the Windows packages.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net462;netstandard2.0</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <Description>The PhotoCraft command-line tool (photocraft-cli) $(PhotoCraftVersion) for every supported platform: depends on each ArtCraft.PhotoCraft.Runtime.&lt;rid&gt; package. Reference a single one of those instead to download only that platform. Unofficial packaging of https://github.com/storytold/photocraft.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../runtimes/README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemDefinitionGroup>
+    <!-- The runtime projects have one target framework; build them as the solution does, not once per TFM here. -->
+    <ProjectReference>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      <GlobalPropertiesToRemove>TargetFramework</GlobalPropertiesToRemove>
+      <!-- NoTargets defaults this to false, which also hides the reference from restore and pack. -->
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <!-- Let the runtime packages' buildTransitive targets reach the app (the default excludes build assets). -->
+      <PrivateAssets>none</PrivateAssets>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.win-x64/ArtCraft.PhotoCraft.Runtime.win-x64.csproj" />
+    <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.win-x86/ArtCraft.PhotoCraft.Runtime.win-x86.csproj" />
+    <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.win-arm64/ArtCraft.PhotoCraft.Runtime.win-arm64.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.linux-x64/ArtCraft.PhotoCraft.Runtime.linux-x64.csproj" />
+    <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.linux-arm64/ArtCraft.PhotoCraft.Runtime.linux-arm64.csproj" />
+    <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.osx/ArtCraft.PhotoCraft.Runtime.osx.csproj" />
+  </ItemGroup>
+
+</Project>

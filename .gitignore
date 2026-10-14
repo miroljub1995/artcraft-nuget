@@ -1,0 +1,9 @@
+artifacts/
+bin/
+obj/
+*.user
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+TestResults/

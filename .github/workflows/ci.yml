@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build, test, pack
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Cache upstream release archives
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: artifacts/download
+          key: photocraft-${{ hashFiles('eng/PhotoCraft.props') }}
+
+      # A tag vX.Y.Z must match eng/PhotoCraft.props; vX.Y.Z.N republishes X.Y.Z as revision N.
+      - name: Resolve package version
+        id: version
+        shell: bash
+        run: |
+          upstream="$(sed -n 's:.*<PhotoCraftVersion>\(.*\)</PhotoCraftVersion>.*:\1:p' eng/PhotoCraft.props)"
+          args=""
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="${GITHUB_REF_NAME#v}"
+            if [[ "$tag" == "$upstream" ]]; then
+              :
+            elif [[ "$tag" =~ ^${upstream//./\\.}\.([0-9]+)$ ]]; then
+              args="-p:PackageRevision=${BASH_REMATCH[1]}"
+            else
+              echo "::error::Tag $GITHUB_REF_NAME doesn't match PhotoCraftVersion $upstream in eng/PhotoCraft.props (expected v$upstream or v$upstream.N)."
+              exit 1
+            fi
+          fi
+          echo "msbuild-args=$args" >> "$GITHUB_OUTPUT"
+
+      - run: dotnet build -c Release ${{ steps.version.outputs.msbuild-args }}
+      - run: dotnet test -c Release --no-build
+      - run: dotnet format --verify-no-changes --no-restore
+      - run: dotnet pack -c Release --no-build ${{ steps.version.outputs.msbuild-args }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: packages
+          path: artifacts/package/release/*
+          if-no-files-found: error
+
+  smoke:
+    name: Smoke test ${{ matrix.rid }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, rid: linux-x64 }
+          - { os: ubuntu-24.04-arm, rid: linux-arm64 }
+          - { os: macos-15, rid: osx-arm64 }
+          - { os: macos-15-intel, rid: osx-x64 }
+          - { os: windows-2025, rid: win-x64 }
+          - { os: windows-11-arm, rid: win-arm64 }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packages
+          path: artifacts/package/release
+      - run: eng/smoke-test.sh ${{ matrix.rid }}
+        shell: bash
+
+  publish:
+    name: Publish to nuget.org
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, smoke]
+    runs-on: ubuntu-24.04
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write # NuGet trusted publishing
+    steps:
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packages
+          path: packages
+      # Exchanges the workflow's OIDC token for a short-lived API key: no long-lived key in secrets.
+      # Needs a trusted publishing policy for this repository and workflow on nuget.org.
+      - uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Push packages
+        run: >-
+          dotnet nuget push "packages/*.nupkg"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

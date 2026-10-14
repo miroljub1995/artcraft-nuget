@@ -1,0 +1,3 @@
+<Project>
+  <!-- Stand-alone: behave like an outside consumer, not like the repository's projects. -->
+</Project>
