@@ -55,7 +55,7 @@ public static class PhotoCraftCli
         return Locate(
             Environment.GetEnvironmentVariable(PathEnvironmentVariable),
             AppContext.BaseDirectory,
-            GetRuntimeIdentifier(os, RuntimeInformation.OSArchitecture),
+            GetRuntimeIdentifier(os, RuntimeInformation.ProcessArchitecture),
             os == "win" ? "photocraft-cli.exe" : "photocraft-cli");
     }
 
@@ -78,7 +78,7 @@ public static class PhotoCraftCli
         if (runtimeIdentifier is null)
         {
             throw new PlatformNotSupportedException(
-                $"PhotoCraft has no build for {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture}). " +
+                $"PhotoCraft has no build for {RuntimeInformation.OSDescription} ({RuntimeInformation.ProcessArchitecture}). " +
                 $"Install photocraft-cli yourself and set {PathEnvironmentVariable} to its path.");
         }
 
@@ -104,8 +104,8 @@ public static class PhotoCraftCli
 
     /// <summary>
     /// The runtime identifier of the package that has the binary for <paramref name="os"/>/<paramref name="architecture"/>,
-    /// or <see langword="null"/> when PhotoCraft has no build for it. The CLI runs in its own process, so this is the
-    /// operating system's architecture, not this process's.
+    /// or <see langword="null"/> when PhotoCraft has no build for it. Takes this process's architecture, the same
+    /// binary <c>dotnet publish -r &lt;rid&gt;</c> ships for the app.
     /// </summary>
     internal static string? GetRuntimeIdentifier(string? os, Architecture architecture) => (os, architecture) switch
     {

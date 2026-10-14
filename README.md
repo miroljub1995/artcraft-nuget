@@ -55,9 +55,10 @@ await process.WaitForExitAsync(cancellationToken);
 | .NET Framework 4.6.2+ | `runtimes/win-<arch>/native/photocraft-cli.exe` (copied by the package's build targets) |
 | `PHOTOCRAFT_CLI_PATH` set | that file, e.g. a copy installed in a container image |
 
-It picks the binary by the operating system's architecture rather than the app's, since the CLI runs in its
-own process. It throws `FileNotFoundException` naming the package to install and every path it tried, or
-`PlatformNotSupportedException` on a platform PhotoCraft doesn't build for.
+It picks the binary for the app's own architecture, the same one `dotnet publish -r <rid>` would ship: an x64
+app on an Arm machine runs the x64 CLI under emulation. It throws `FileNotFoundException` naming the package
+to install and every path it tried, or `PlatformNotSupportedException` on a platform PhotoCraft doesn't build
+for.
 
 ### Things to know
 
