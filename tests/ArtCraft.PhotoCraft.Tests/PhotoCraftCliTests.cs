@@ -14,24 +14,24 @@ public sealed class PhotoCraftCliTests : IDisposable
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
     [TestMethod]
-    [DataRow("win", Architecture.Arm64, new[] { "win-arm64", "win-x64", "win-x86" })]
-    [DataRow("win", Architecture.X64, new[] { "win-x64", "win-x86" })]
-    [DataRow("win", Architecture.X86, new[] { "win-x86" })]
-    [DataRow("osx", Architecture.Arm64, new[] { "osx-arm64", "osx" })]
-    [DataRow("osx", Architecture.X64, new[] { "osx-x64", "osx" })]
-    [DataRow("linux", Architecture.X64, new[] { "linux-x64" })]
-    [DataRow("linux", Architecture.Arm64, new[] { "linux-arm64" })]
-    [DataRow("linux", Architecture.Arm, new string[0])]
-    [DataRow(null, Architecture.X64, new string[0])]
-    public void RuntimeIdentifiers_are_listed_best_first(string? os, Architecture architecture, string[] expected) =>
-        CollectionAssert.AreEqual(expected, PhotoCraftCli.GetRuntimeIdentifiers(os, architecture).ToArray());
+    [DataRow("win", Architecture.X64, "win-x64")]
+    [DataRow("win", Architecture.X86, "win-x86")]
+    [DataRow("win", Architecture.Arm64, "win-arm64")]
+    [DataRow("linux", Architecture.X64, "linux-x64")]
+    [DataRow("linux", Architecture.Arm64, "linux-arm64")]
+    [DataRow("osx", Architecture.X64, "osx")]
+    [DataRow("osx", Architecture.Arm64, "osx")]
+    [DataRow("linux", Architecture.Arm, null)]
+    [DataRow(null, Architecture.X64, null)]
+    public void Each_platform_maps_to_its_package(string? os, Architecture architecture, string? expected) =>
+        Assert.AreEqual(expected, PhotoCraftCli.GetRuntimeIdentifier(os, architecture));
 
     [TestMethod]
     public void Finds_the_binary_under_runtimes_in_framework_dependent_output()
     {
         var expected = CreateFile("runtimes", "osx", "native", FileName);
 
-        Assert.AreEqual(expected, Locate(["osx-arm64", "osx"]));
+        Assert.AreEqual(expected, Locate("osx"));
     }
 
     [TestMethod]
@@ -39,34 +39,24 @@ public sealed class PhotoCraftCliTests : IDisposable
     {
         var expected = CreateFile(FileName);
 
-        Assert.AreEqual(expected, Locate(["linux-x64"]));
+        Assert.AreEqual(expected, Locate("linux-x64"));
     }
 
     [TestMethod]
-    public void Prefers_the_exact_runtime_identifier_to_the_app_directory()
+    public void Prefers_runtimes_to_the_app_directory()
     {
         CreateFile(FileName);
         var expected = CreateFile("runtimes", "win-arm64", "native", FileName);
-        CreateFile("runtimes", "win-x64", "native", FileName);
 
-        Assert.AreEqual(expected, Locate(["win-arm64", "win-x64", "win-x86"]));
+        Assert.AreEqual(expected, Locate("win-arm64"));
     }
 
     [TestMethod]
-    public void Prefers_the_app_directory_to_a_compatible_runtime_identifier()
+    public void Never_uses_another_platforms_binary()
     {
-        var expected = CreateFile(FileName);
         CreateFile("runtimes", "win-x64", "native", FileName);
 
-        Assert.AreEqual(expected, Locate(["win-arm64", "win-x64"]));
-    }
-
-    [TestMethod]
-    public void Falls_back_to_a_compatible_runtime_identifier()
-    {
-        var expected = CreateFile("runtimes", "win-x86", "native", FileName);
-
-        Assert.AreEqual(expected, Locate(["win-arm64", "win-x64", "win-x86"]));
+        Assert.ThrowsExactly<FileNotFoundException>(() => Locate("win-arm64"));
     }
 
     [TestMethod]
@@ -75,7 +65,7 @@ public sealed class PhotoCraftCliTests : IDisposable
         var other = Path.Combine(_root, "plugin");
         var expected = CreateFile("plugin", "runtimes", "linux-x64", "native", FileName);
 
-        Assert.AreEqual(expected, PhotoCraftCli.Locate(null, [_root, other], ["linux-x64"], FileName));
+        Assert.AreEqual(expected, PhotoCraftCli.Locate(null, [_root, other], "linux-x64", FileName));
     }
 
     [TestMethod]
@@ -84,7 +74,7 @@ public sealed class PhotoCraftCliTests : IDisposable
         CreateFile(FileName);
         var expected = CreateFile("custom", FileName);
 
-        Assert.AreEqual(expected, PhotoCraftCli.Locate(expected, [_root], ["linux-x64"], FileName));
+        Assert.AreEqual(expected, PhotoCraftCli.Locate(expected, [_root], "linux-x64", FileName));
     }
 
     [TestMethod]
@@ -93,27 +83,26 @@ public sealed class PhotoCraftCliTests : IDisposable
         CreateFile(FileName);
         var missing = Path.Combine(_root, "missing", FileName);
 
-        var e = Assert.ThrowsExactly<FileNotFoundException>(() => PhotoCraftCli.Locate(missing, [_root], ["linux-x64"], FileName));
+        var e = Assert.ThrowsExactly<FileNotFoundException>(() => PhotoCraftCli.Locate(missing, [_root], "linux-x64", FileName));
         Assert.Contains(PhotoCraftCli.PathEnvironmentVariable, e.Message, StringComparison.Ordinal);
     }
 
     [TestMethod]
     public void Missing_binary_lists_every_probed_path_and_the_package_to_install()
     {
-        var e = Assert.ThrowsExactly<FileNotFoundException>(() => Locate(["win-x64", "win-x86"]));
+        var e = Assert.ThrowsExactly<FileNotFoundException>(() => Locate("win-x64"));
 
         Assert.Contains("ArtCraft.PhotoCraft.Runtime.win-x64", e.Message, StringComparison.Ordinal);
         Assert.Contains(Path.Combine(_root, "runtimes", "win-x64", "native", FileName), e.Message, StringComparison.Ordinal);
         Assert.Contains(Path.Combine(_root, FileName), e.Message, StringComparison.Ordinal);
-        Assert.Contains(Path.Combine(_root, "runtimes", "win-x86", "native", FileName), e.Message, StringComparison.Ordinal);
     }
 
     [TestMethod]
     public void Unsupported_platform_throws_PlatformNotSupportedException() =>
-        Assert.ThrowsExactly<PlatformNotSupportedException>(() => Locate([]));
+        Assert.ThrowsExactly<PlatformNotSupportedException>(() => Locate(null));
 
-    private string Locate(string[] runtimeIdentifiers) =>
-        PhotoCraftCli.Locate(null, [_root], runtimeIdentifiers, FileName);
+    private string Locate(string? runtimeIdentifier) =>
+        PhotoCraftCli.Locate(null, [_root], runtimeIdentifier, FileName);
 
     private string CreateFile(params string[] relativePath)
     {

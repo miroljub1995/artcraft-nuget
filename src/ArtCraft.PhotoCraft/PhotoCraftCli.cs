@@ -14,8 +14,6 @@ namespace ArtCraft.PhotoCraft;
 /// publish without a runtime identifier keeps every platform's binary there.</item>
 /// <item>The application directory itself: a publish for one runtime identifier (<c>-r linux-x64</c>)
 /// copies the binary there.</item>
-/// <item><c>runtimes/&lt;rid&gt;/native/</c> for runtime identifiers that can also run on this machine,
-/// such as <c>win-x64</c> on Windows on Arm.</item>
 /// </list>
 /// The application directory is <see cref="AppContext.BaseDirectory"/>, then the directory of this assembly
 /// when it differs (for example when it is loaded as a plugin).
@@ -58,7 +56,7 @@ public static class PhotoCraftCli
         var path = Locate(
             Environment.GetEnvironmentVariable(PathEnvironmentVariable),
             GetSearchDirectories(),
-            GetRuntimeIdentifiers(os, RuntimeInformation.OSArchitecture),
+            GetRuntimeIdentifier(os, RuntimeInformation.OSArchitecture),
             os == "win" ? "photocraft-cli.exe" : "photocraft-cli");
         if (os != "win")
         {
@@ -71,7 +69,7 @@ public static class PhotoCraftCli
     internal static string Locate(
         string? overridePath,
         IEnumerable<string> searchDirectories,
-        IReadOnlyList<string> runtimeIdentifiers,
+        string? runtimeIdentifier,
         string fileName)
     {
         if (!string.IsNullOrEmpty(overridePath))
@@ -84,7 +82,7 @@ public static class PhotoCraftCli
                     $"{PathEnvironmentVariable} is set to '{fullPath}', but that file doesn't exist.", fullPath);
         }
 
-        if (runtimeIdentifiers.Count == 0)
+        if (runtimeIdentifier is null)
         {
             throw new PlatformNotSupportedException(
                 $"PhotoCraft has no build for {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture}). " +
@@ -94,7 +92,11 @@ public static class PhotoCraftCli
         var probed = new List<string>();
         foreach (var directory in searchDirectories)
         {
-            foreach (var candidate in GetCandidates(directory, runtimeIdentifiers, fileName))
+            foreach (var candidate in new[]
+            {
+                Path.Combine(directory, "runtimes", runtimeIdentifier, "native", fileName),
+                Path.Combine(directory, fileName),
+            })
             {
                 probed.Add(candidate);
                 if (File.Exists(candidate))
@@ -105,38 +107,27 @@ public static class PhotoCraftCli
         }
 
         throw new FileNotFoundException(
-            $"{fileName} was not found. Reference the {RuntimePackage} package, or {RuntimePackage}.{runtimeIdentifiers[0]} " +
+            $"{fileName} was not found. Reference the {RuntimePackage} package, or {RuntimePackage}.{runtimeIdentifier} " +
             $"for this platform only, or set {PathEnvironmentVariable}. Looked in:{Environment.NewLine}  " +
             string.Join(Environment.NewLine + "  ", probed),
             fileName);
     }
 
-    internal static IEnumerable<string> GetCandidates(string directory, IReadOnlyList<string> runtimeIdentifiers, string fileName)
-    {
-        yield return Path.Combine(directory, "runtimes", runtimeIdentifiers[0], "native", fileName);
-        yield return Path.Combine(directory, fileName);
-        for (var i = 1; i < runtimeIdentifiers.Count; i++)
-        {
-            yield return Path.Combine(directory, "runtimes", runtimeIdentifiers[i], "native", fileName);
-        }
-    }
-
     /// <summary>
-    /// The runtime identifiers whose binary runs on <paramref name="os"/>/<paramref name="architecture"/>, best first.
-    /// The CLI runs in its own process, so the operating system's architecture matters, not this process's.
+    /// The runtime identifier of the package that has the binary for <paramref name="os"/>/<paramref name="architecture"/>,
+    /// or <see langword="null"/> when PhotoCraft has no build for it. The CLI runs in its own process, so this is the
+    /// operating system's architecture, not this process's.
     /// </summary>
-    internal static IReadOnlyList<string> GetRuntimeIdentifiers(string? os, Architecture architecture) => (os, architecture) switch
+    internal static string? GetRuntimeIdentifier(string? os, Architecture architecture) => (os, architecture) switch
     {
-        // Windows on Arm runs x64 and x86 binaries under emulation.
-        ("win", Architecture.Arm64) => ["win-arm64", "win-x64", "win-x86"],
-        ("win", Architecture.X64) => ["win-x64", "win-x86"],
-        ("win", Architecture.X86) => ["win-x86"],
-        // The macOS binary is universal, so its package uses the architecture-neutral "osx".
-        ("osx", Architecture.Arm64) => ["osx-arm64", "osx"],
-        ("osx", Architecture.X64) => ["osx-x64", "osx"],
-        ("linux", Architecture.X64) => ["linux-x64"],
-        ("linux", Architecture.Arm64) => ["linux-arm64"],
-        _ => [],
+        ("win", Architecture.X64) => "win-x64",
+        ("win", Architecture.X86) => "win-x86",
+        ("win", Architecture.Arm64) => "win-arm64",
+        ("linux", Architecture.X64) => "linux-x64",
+        ("linux", Architecture.Arm64) => "linux-arm64",
+        // One universal binary for Apple silicon and Intel.
+        ("osx", Architecture.X64 or Architecture.Arm64) => "osx",
+        _ => null,
     };
 
     private static string? GetOperatingSystem() =>

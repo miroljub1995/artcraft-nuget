@@ -56,9 +56,8 @@ await process.WaitForExitAsync(cancellationToken);
 | `PHOTOCRAFT_CLI_PATH` set | that file, e.g. a copy installed in a container image |
 
 It picks the binary by the operating system's architecture rather than the app's, since the CLI runs in its
-own process; on Windows on Arm it falls back to the x64 and x86 builds when the arm64 one is absent. It throws `FileNotFoundException` naming the
-package to install and every path it tried, or `PlatformNotSupportedException` on a platform PhotoCraft
-doesn't build for.
+own process. It throws `FileNotFoundException` naming the package to install and every path it tried, or
+`PlatformNotSupportedException` on a platform PhotoCraft doesn't build for.
 
 ### Things to know
 
