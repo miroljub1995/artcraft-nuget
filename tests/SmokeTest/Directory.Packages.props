@@ -1,8 +1,10 @@
 <Project>
-  <!-- Its own versions, not the repository's: the packages under test, at the version eng/smoke-test.sh passes in. -->
+  <!--
+    Its own versions, not the repository's: the packages under test, at the package version
+    eng/smoke-test.sh sets in PhotoCraftPackageVersion (e.g. 0.8.201).
+  -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <PhotoCraftPackageVersion Condition="'$(PhotoCraftPackageVersion)' == ''">0.8.2</PhotoCraftPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>

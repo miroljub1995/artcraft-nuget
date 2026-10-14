@@ -1,11 +1,14 @@
 <Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)../'))" />
+
   <!--
-    Download the upstream release archive for $(PhotoCraftRid), check it against the digest pinned in
-    eng/PhotoCraft.props, and stage photocraft-cli plus its licences for packing.
+    Download the upstream release archive of PhotoCraft $(PhotoCraftVersion) for $(PhotoCraftRid), check it
+    against the release's SHA256SUMS.txt, and stage photocraft-cli plus its licences for packing.
+    Without a PhotoCraftVersion (a plain `dotnet build` or `dotnet test`) nothing is downloaded.
   -->
   <PropertyGroup>
     <PhotoCraftDownloadDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsPath)', 'download', '$(PhotoCraftVersion)'))</PhotoCraftDownloadDirectory>
-    <PhotoCraftStageDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'photocraft'))</PhotoCraftStageDirectory>
+    <PhotoCraftStageDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'photocraft', '$(PhotoCraftVersion)'))</PhotoCraftStageDirectory>
     <_PhotoCraftStamp>$(PhotoCraftStageDirectory)photocraft.stamp</_PhotoCraftStamp>
   </PropertyGroup>
 
@@ -21,23 +24,48 @@
     <Error Condition="'@(_PhotoCraftAsset)' == ''" Text="eng/PhotoCraft.props has no PhotoCraftAsset for '$(PhotoCraftRid)'." />
     <PropertyGroup>
       <_PhotoCraftArchive>@(_PhotoCraftAsset->'%(Archive)')</_PhotoCraftArchive>
-      <_PhotoCraftSha256>@(_PhotoCraftAsset->'%(Sha256)')</_PhotoCraftSha256>
       <_PhotoCraftExecutable>@(_PhotoCraftAsset->'%(Executable)')</_PhotoCraftExecutable>
       <_PhotoCraftExecutableName>$([System.IO.Path]::GetFileName('$(_PhotoCraftExecutable)'))</_PhotoCraftExecutableName>
       <_PhotoCraftArchivePath>$(PhotoCraftDownloadDirectory)$(_PhotoCraftArchive)</_PhotoCraftArchivePath>
+      <_PhotoCraftSumsPath>$(PhotoCraftDownloadDirectory)SHA256SUMS.txt</_PhotoCraftSumsPath>
       <_PhotoCraftExtractDirectory>$(PhotoCraftStageDirectory)extract/</_PhotoCraftExtractDirectory>
     </PropertyGroup>
   </Target>
 
   <Target Name="AcquirePhotoCraftCli"
           BeforeTargets="Build"
+          Condition="'$(PhotoCraftVersion)' != ''"
           DependsOnTargets="_PhotoCraftResolveAsset"
           Inputs="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(RepoRoot)eng/PhotoCraft.props"
           Outputs="$(_PhotoCraftStamp)">
+    <CallTarget Targets="_PhotoCraftRequireVersion" />
+    <DownloadFile Condition="!Exists('$(_PhotoCraftSumsPath)')"
+                  SourceUrl="$(PhotoCraftReleaseUrl)/SHA256SUMS.txt"
+                  DestinationFolder="$(PhotoCraftDownloadDirectory)"
+                  Retries="3" />
     <DownloadFile Condition="!Exists('$(_PhotoCraftArchivePath)')"
                   SourceUrl="$(PhotoCraftReleaseUrl)/$(_PhotoCraftArchive)"
                   DestinationFolder="$(PhotoCraftDownloadDirectory)"
                   Retries="3" />
+
+    <!-- SHA256SUMS.txt lines are "<sha256>  <file>" (or "<sha256> *<file>" in binary mode). -->
+    <ReadLinesFromFile File="$(_PhotoCraftSumsPath)">
+      <Output TaskParameter="Lines" ItemName="_PhotoCraftSumLine" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <_PhotoCraftSum Include="@(_PhotoCraftSumLine)"
+                      Condition="$([System.String]::Copy('%(Identity)').TrimEnd().EndsWith(' $(_PhotoCraftArchive)')) or $([System.String]::Copy('%(Identity)').TrimEnd().EndsWith('*$(_PhotoCraftArchive)'))" />
+    </ItemGroup>
+    <Error Condition="'@(_PhotoCraftSum->Count())' != '1'" Text="SHA256SUMS.txt of v$(PhotoCraftVersion) has no single entry for $(_PhotoCraftArchive)." />
+    <!--
+      Item lists don't expand inside property functions, so take the line into a property first. The
+      condition matters when the target is up to date: MSBuild then skips the tasks but still evaluates
+      this group.
+    -->
+    <PropertyGroup>
+      <_PhotoCraftSumLine>@(_PhotoCraftSum)</_PhotoCraftSumLine>
+      <_PhotoCraftSha256 Condition="'$(_PhotoCraftSumLine)' != ''">$(_PhotoCraftSumLine.Substring(0, 64))</_PhotoCraftSha256>
+    </PropertyGroup>
 
     <GetFileHash Files="$(_PhotoCraftArchivePath)" Algorithm="SHA256">
       <Output TaskParameter="Hash" PropertyName="_PhotoCraftActualSha256" />
@@ -45,7 +73,8 @@
     <!-- Delete a bad download so the next build fetches it again. Conditions compare case-insensitively. -->
     <Delete Condition="'$(_PhotoCraftActualSha256)' != '$(_PhotoCraftSha256)'" Files="$(_PhotoCraftArchivePath)" />
     <Error Condition="'$(_PhotoCraftActualSha256)' != '$(_PhotoCraftSha256)'"
-           Text="$(_PhotoCraftArchive) has SHA-256 $(_PhotoCraftActualSha256), expected $(_PhotoCraftSha256) (eng/PhotoCraft.props). The file was deleted." />
+           Text="$(_PhotoCraftArchive) has SHA-256 $(_PhotoCraftActualSha256), but SHA256SUMS.txt says $(_PhotoCraftSha256). The file was deleted." />
+    <Message Importance="high" Text="$(_PhotoCraftArchive): SHA-256 $(_PhotoCraftActualSha256)" />
 
     <RemoveDir Directories="$(PhotoCraftStageDirectory)" />
     <Unzip Condition="$(_PhotoCraftArchive.EndsWith('.zip'))" SourceFiles="$(_PhotoCraftArchivePath)" DestinationFolder="$(_PhotoCraftExtractDirectory)" />
@@ -66,7 +95,7 @@
     <WriteLinesToFile File="$(_PhotoCraftStamp)" Lines="$(_PhotoCraftSha256)" Overwrite="true" />
   </Target>
 
-  <Target Name="_PhotoCraftAddPackageFiles" BeforeTargets="_GetPackageFiles" DependsOnTargets="AcquirePhotoCraftCli">
+  <Target Name="_PhotoCraftAddPackageFiles" BeforeTargets="_GetPackageFiles" DependsOnTargets="_PhotoCraftRequireVersion;AcquirePhotoCraftCli">
     <ItemGroup>
       <None Include="$(PhotoCraftStageDirectory)bin/$(_PhotoCraftExecutableName)" Pack="true" PackagePath="runtimes/$(PhotoCraftRid)/native/" />
       <None Include="$(PhotoCraftStageDirectory)licenses/*" Pack="true" PackagePath="licenses/" />

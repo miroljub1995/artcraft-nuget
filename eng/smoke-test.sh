@@ -8,13 +8,18 @@
 #   4. PHOTOCRAFT_CLI_PATH override (good and bad path)
 #   5. .NET Framework 4.8 build             -> runtimes/win-*/native/photocraft-cli.exe (run on Windows only)
 #
-# Usage: eng/smoke-test.sh <rid>        rid of this machine: linux-x64, linux-arm64, osx-arm64, osx-x64,
-#                                       win-x64, win-x86, win-arm64
+# Usage: eng/smoke-test.sh <rid> <photocraft version> [package revision]
+#   rid                 this machine: linux-x64, linux-arm64, osx-arm64, osx-x64, win-x64, win-x86, win-arm64
+#   photocraft version  the upstream version that was packed, e.g. 0.8.2
+#   package revision    1-99 (default 1): 0.8.2 revision 1 is package version 0.8.201
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RID="${1:?usage: eng/smoke-test.sh <rid>}"
-VERSION="$(sed -n 's:.*<PhotoCraftVersion>\(.*\)</PhotoCraftVersion>.*:\1:p' "$ROOT/eng/PhotoCraft.props")"
+RID="${1:?usage: eng/smoke-test.sh <rid> <photocraft version> [package revision]}"
+VERSION="${2:?usage: eng/smoke-test.sh <rid> <photocraft version> [package revision]}"
+REVISION="${3:-1}"
+IFS=. read -r MAJOR MINOR PATCH <<<"$VERSION"
+PACKAGE_VERSION="$MAJOR.$MINOR.$((PATCH * 100 + REVISION))"
 PROJECT="$ROOT/tests/SmokeTest/SmokeTest.csproj"
 OUT="$ROOT/artifacts/smoke"
 
@@ -36,7 +41,7 @@ expect_file() {
 
 # Always test the freshly packed packages, never an older copy from the cache.
 rm -rf "$OUT"
-export PhotoCraftPackageVersion="$VERSION"
+export PhotoCraftPackageVersion="$PACKAGE_VERSION"
 
 step "1. framework-dependent build: runtimes/$PACKAGE_RID/native/$EXE"
 dotnet build "$PROJECT" -c Release -f net10.0 -o "$OUT/build"
@@ -72,4 +77,4 @@ done
 [ ! -e "$OUT/netfx/runtimes/linux-x64" ] || fail "net48 output has the Linux binary; the meta-package should only bring Windows ones"
 case "$RID" in win-*) "$OUT/netfx/SmokeTest.exe" "$VERSION" ;; *) echo "(not run: .NET Framework needs Windows)" ;; esac
 
-step "all smoke tests passed on $RID"
+step "all smoke tests passed on $RID (PhotoCraft $VERSION, packages $PACKAGE_VERSION)"

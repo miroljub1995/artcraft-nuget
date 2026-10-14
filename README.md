@@ -16,8 +16,16 @@ NuGet packages that ship the [PhotoCraft](https://github.com/storytold/photocraf
 | `ArtCraft.PhotoCraft.Runtime.osx` | `runtimes/osx/native/photocraft-cli`, universal (Apple silicon + Intel), macOS 11+ |
 | `ArtCraft.PhotoCraft.Runtime.win-x64` / `.win-x86` / `.win-arm64` | `runtimes/<rid>/native/photocraft-cli.exe` |
 
-Package versions follow the upstream version (`0.8.2`). A packaging-only fix of the same binaries is released as
-`0.8.2.1`, `0.8.2.2`, ...
+### Versions
+
+A package version is the upstream version with a two-digit packaging revision (01–99) appended to the patch
+number. Every package of a release has the same version.
+
+| Upstream PhotoCraft | Packages |
+|---|---|
+| 0.8.2 | `0.8.201`; a packaging-only fix of the same binaries is `0.8.202`, `0.8.203`, ... |
+| 0.8.12 | `0.8.1201`, ... |
+| 0.9.0 | `0.9.1`, ... (the leading zeros of `001` are dropped) |
 
 ### Why one package per platform
 
@@ -73,25 +81,33 @@ for.
 
 ## Building
 
-Needs the .NET 10 SDK. The runtime projects download the upstream release archives on first build, verify
-them against the SHA-256 digests pinned in [`eng/PhotoCraft.props`](eng/PhotoCraft.props), and cache them in
-`artifacts/download/`.
+Needs the .NET 10 SDK. The upstream version is a build input. With it, the runtime projects download that
+release's archives, check them against the release's `SHA256SUMS.txt`, and cache them in `artifacts/download/`.
 
 ```shell
-dotnet build -c Release
-dotnet test -c Release
-dotnet pack -c Release            # -> artifacts/package/release/
-eng/smoke-test.sh linux-x64       # installs the packed packages into tests/SmokeTest and runs the CLI
+dotnet test -c Release                                       # no version needed, nothing is downloaded
+dotnet pack -c Release -p:PhotoCraftVersion=0.8.2            # -> artifacts/package/release/*.0.8.201.nupkg
+dotnet pack -c Release -p:PhotoCraftVersion=0.8.2 -p:PackageRevision=2   # -> *.0.8.202.nupkg
+eng/smoke-test.sh linux-x64 0.8.2                            # installs the packed packages into tests/SmokeTest and runs the CLI
 ```
 
-### Updating to a new PhotoCraft release
+## Releasing
 
-```shell
-eng/update-photocraft.sh 0.9.0    # sets the version and pins the new digests from the release's SHA256SUMS.txt
-```
+Nothing to do by hand: the `Release` workflow runs every day and publishes each upstream release that isn't on
+nuget.org yet. It takes stable releases (no drafts or pre-releases) from 0.8.2 on, once they are at least
+24 hours old, so upstream has time to pull a bad release first. Each version is built and smoke-tested on
+Linux, macOS and Windows (x64 and arm64) before anything is pushed. If anything fails, nothing is pushed
+that day and the next run tries again.
 
-The `Update PhotoCraft` workflow does this weekly and opens a pull request. After merging, push a `v0.9.0` tag:
-CI builds, smoke-tests on Linux, macOS and Windows (x64 and arm64), and publishes to nuget.org.
+The minimum version and the delay are `MIN_VERSION` and `MIN_AGE_HOURS` in
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
+
+To republish a version with a packaging fix, run the `Release` workflow by hand with the upstream version and
+the next revision, e.g. `0.8.2` and `2` for `0.8.202`. nuget.org doesn't allow replacing a published version.
+
+The workflow trusts the hashes in each upstream release's `SHA256SUMS.txt`. Upstream signs nothing, so this
+catches corrupted downloads but not a tampered release; the 24-hour delay is the safeguard. Each run logs the
+SHA-256 of every archive it packaged.
 
 ### Publishing setup (once)
 
@@ -99,9 +115,9 @@ Publishing uses [NuGet trusted publishing](https://learn.microsoft.com/nuget/nug
 no API key is stored in GitHub:
 
 1. On nuget.org, add a trusted publishing policy for repository `miroljub1995/artcraft-nuget`, workflow
-   `ci.yml`, environment `nuget`.
-2. In the repository settings, create the `nuget` environment (optionally with required reviewers) and add the
-   secret `NUGET_USER` with your nuget.org user name.
+   `release.yml`, environment `nuget`.
+2. In the repository settings, create the `nuget` environment and add the secret `NUGET_USER` with your
+   nuget.org user name. Don't add required reviewers to it unless you want to approve every daily publish.
 
 ## Licence
 

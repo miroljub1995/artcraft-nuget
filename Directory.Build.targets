@@ -1,0 +1,9 @@
+<Project>
+  <!-- Every package is versioned after the upstream release it carries, so packing needs one. -->
+  <Target Name="_PhotoCraftRequireVersion" BeforeTargets="GenerateNuspec" Condition="'$(IsPackable)' == 'true' or '$(PhotoCraftVersion)' != ''">
+    <Error Condition="'$(PhotoCraftVersion)' == ''"
+           Text="Set the upstream PhotoCraft version to package, e.g. dotnet pack -c Release -p:PhotoCraftVersion=0.8.2" />
+    <Error Condition="'$(PhotoCraftVersion)' != '' and !$(_PhotoCraftVersionIsValid)"
+           Text="PhotoCraftVersion must be a stable release like 0.8.2 (got '$(PhotoCraftVersion)'), and PackageRevision 1-99 (got '$(PackageRevision)')." />
+  </Target>
+</Project>

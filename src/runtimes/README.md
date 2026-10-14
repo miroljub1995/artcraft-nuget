@@ -1,7 +1,7 @@
 # PhotoCraft CLI runtime packages
 
 These packages carry the [PhotoCraft](https://github.com/storytold/photocraft) command-line tool, `photocraft-cli`,
-taken unmodified from the official GitHub release and checked against a pinned SHA-256 digest.
+taken unmodified from the official GitHub release and checked against the SHA-256 in its `SHA256SUMS.txt`.
 
 > **Unofficial.** This packaging isn't made or endorsed by the PhotoCraft authors. Report problems with the
 > tool itself upstream, and problems with the packages at
