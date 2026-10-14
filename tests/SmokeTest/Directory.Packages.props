@@ -1,5 +1,12 @@
 <Project>
+  <!-- Its own versions, not the repository's: the packages under test, at the version eng/smoke-test.sh passes in. -->
   <PropertyGroup>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <PhotoCraftPackageVersion Condition="'$(PhotoCraftPackageVersion)' == ''">0.8.2</PhotoCraftPackageVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="ArtCraft.PhotoCraft" Version="$(PhotoCraftPackageVersion)" />
+    <PackageVersion Include="ArtCraft.PhotoCraft.Runtime" Version="$(PhotoCraftPackageVersion)" />
+  </ItemGroup>
 </Project>

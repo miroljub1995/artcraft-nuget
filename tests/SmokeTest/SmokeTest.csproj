@@ -10,12 +10,11 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <PhotoCraftPackageVersion Condition="'$(PhotoCraftPackageVersion)' == ''">0.8.2</PhotoCraftPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ArtCraft.PhotoCraft" Version="$(PhotoCraftPackageVersion)" />
-    <PackageReference Include="ArtCraft.PhotoCraft.Runtime" Version="$(PhotoCraftPackageVersion)" />
+    <PackageReference Include="ArtCraft.PhotoCraft" />
+    <PackageReference Include="ArtCraft.PhotoCraft.Runtime" />
   </ItemGroup>
 
 </Project>
