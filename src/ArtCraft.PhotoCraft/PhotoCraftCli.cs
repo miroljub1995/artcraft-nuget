@@ -36,9 +36,8 @@ public static class PhotoCraftCli
     /// architecture.
     /// </summary>
     /// <remarks>
-    /// On Linux and macOS the file is also given execute permission if it lacks it (NuGet doesn't keep file
-    /// permissions). That is best effort: on a read-only file system the build-time fix from the runtime
-    /// package has to have run.
+    /// The file is only looked up, never changed. On Linux and macOS the runtime package's build targets give it
+    /// execute permission when the app is built or published.
     /// </remarks>
     /// <returns>The absolute path of the executable.</returns>
     /// <exception cref="FileNotFoundException">
@@ -53,17 +52,11 @@ public static class PhotoCraftCli
     private static string Locate()
     {
         var os = GetOperatingSystem();
-        var path = Locate(
+        return Locate(
             Environment.GetEnvironmentVariable(PathEnvironmentVariable),
             AppContext.BaseDirectory,
             GetRuntimeIdentifier(os, RuntimeInformation.OSArchitecture),
             os == "win" ? "photocraft-cli.exe" : "photocraft-cli");
-        if (os != "win")
-        {
-            EnsureExecutable(path);
-        }
-
-        return path;
     }
 
     internal static string Locate(
@@ -131,50 +124,4 @@ public static class PhotoCraftCli
         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
         null;
-
-    private static void EnsureExecutable(string path)
-    {
-        try
-        {
-#if NET
-            if (OperatingSystem.IsWindows())
-            {
-                return;
-            }
-
-            var mode = File.GetUnixFileMode(path);
-            if ((mode & UnixFileMode.UserExecute) != 0)
-            {
-                return;
-            }
-
-            // Grant execute wherever read is granted: 0644 becomes 0755.
-            if ((mode & UnixFileMode.UserRead) != 0) { mode |= UnixFileMode.UserExecute; }
-            if ((mode & UnixFileMode.GroupRead) != 0) { mode |= UnixFileMode.GroupExecute; }
-            if ((mode & UnixFileMode.OtherRead) != 0) { mode |= UnixFileMode.OtherExecute; }
-            File.SetUnixFileMode(path, mode);
-#else
-            const int X_OK = 1;
-            if (NativeMethods.access(path, X_OK) != 0)
-            {
-                _ = NativeMethods.chmod(path, 0x1ED); // 0755
-            }
-#endif
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or DllNotFoundException or EntryPointNotFoundException)
-        {
-            // Best effort; starting the process reports the real problem if it is still not executable.
-        }
-    }
-
-#if !NET
-    private static class NativeMethods
-    {
-        [DllImport("libc", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int access(string path, int mode);
-
-        [DllImport("libc", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int chmod(string path, int mode);
-    }
-#endif
 }

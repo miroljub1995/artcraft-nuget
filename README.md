@@ -64,8 +64,9 @@ own process. It throws `FileNotFoundException` naming the package to install and
 - **Linux needs glibc 2.35 or newer.** Use Ubuntu 22.04+/Debian 12+ based images, e.g.
   `mcr.microsoft.com/dotnet/aspnet:10.0-noble`. Alpine (musl) has no PhotoCraft build and won't work.
 - **Execute permission.** NuGet doesn't keep file permissions, so the runtime packages run `chmod +x` on the
-  binary after build and publish, and `GetPath()` sets it again if it's missing. When you publish on Windows
-  for Linux, the run-time fix needs a writable app directory; otherwise `chmod +x` it in your Dockerfile.
+  binary after build and publish. `GetPath()` never changes files, so the app directory can be read-only.
+  Publishing on Windows for Linux can't set the permission: run `chmod +x photocraft-cli` in your Dockerfile
+  (or publish on Linux).
 - **It's a separate process.** In a server, give each call a timeout and cancellation, and limit how many run
   at once.
 
