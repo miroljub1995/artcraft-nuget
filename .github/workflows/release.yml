@@ -1,0 +1,116 @@
+name: Release
+
+# Every day: publish each upstream PhotoCraft release that has no package on nuget.org yet (stable releases
+# from MIN_VERSION on, at least MIN_AGE_HOURS old). Run it by hand to publish one version now, e.g. a
+# packaging fix as revision 2 (0.8.2 -> 0.8.202).
+
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+    inputs:
+      photocraft-version:
+        description: "Upstream version to publish now, e.g. 0.8.2 (empty: every missing release)"
+        type: string
+        default: ""
+      package-revision:
+        description: "Packaging revision 1-99, with a version: 0.8.2 revision 2 is package version 0.8.202"
+        type: string
+        default: "1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  MIN_VERSION: "0.8.2"
+  # Time for upstream to pull a bad release before we republish it.
+  MIN_AGE_HOURS: "24"
+
+jobs:
+  plan:
+    name: Find releases to publish
+    runs-on: ubuntu-24.04
+    outputs:
+      versions: ${{ steps.plan.outputs.versions }}
+      revision: ${{ steps.plan.outputs.revision }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.photocraft-version }}
+          INPUT_REVISION: ${{ inputs.package-revision }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            versions="$(jq -cn --arg v "${INPUT_VERSION#v}" '[$v]')"
+            revision="${INPUT_REVISION:-1}"
+          else
+            versions="$(dotnet run eng/find-missing-releases.cs -- "$MIN_VERSION" "$MIN_AGE_HOURS" | tail -n 1)"
+            revision=1
+          fi
+          echo "versions=$versions" >> "$GITHUB_OUTPUT"
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+          echo "Publishing: $versions (revision $revision)" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.versions != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        photocraft-version: ${{ fromJSON(needs.plan.outputs.versions) }}
+    uses: ./.github/workflows/build.yml
+    with:
+      photocraft-version: ${{ matrix.photocraft-version }}
+      package-revision: ${{ needs.plan.outputs.revision }}
+
+  # Runs only when every version built and passed its smoke tests; a failure is retried the next day.
+  publish:
+    name: Publish ${{ matrix.photocraft-version }}
+    needs: [plan, build]
+    if: needs.plan.outputs.versions != '[]'
+    runs-on: ubuntu-24.04
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write # NuGet trusted publishing
+    strategy:
+      max-parallel: 1
+      matrix:
+        photocraft-version: ${{ fromJSON(needs.plan.outputs.versions) }}
+    steps:
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packages-${{ matrix.photocraft-version }}-${{ needs.plan.outputs.revision }}
+          path: packages
+      # Exchanges the workflow's OIDC token for a short-lived API key: no long-lived key in secrets.
+      # Needs a trusted publishing policy for this repository and workflow on nuget.org.
+      - uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Push packages
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          push() { dotnet nuget push "$1" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate; }
+          # The meta-package ArtCraft.PhotoCraft.Runtime.<version> goes last: find-missing-releases.cs
+          # treats a version as published once it exists, so a run that stops halfway is retried.
+          meta=""
+          for package in packages/*.nupkg; do
+            case "$(basename "$package")" in
+              ArtCraft.PhotoCraft.Runtime.[0-9]*) meta="$package" ;;
+              *) push "$package" ;;
+            esac
+          done
+          push "$meta"

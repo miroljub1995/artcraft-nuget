@@ -1,0 +1,42 @@
+<Project>
+  <PropertyGroup>
+    <!-- Everything lands under artifacts/ (bin, obj, package). -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <!-- Pinned to the root: nested Directory.Build.props files would otherwise move it. -->
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <TreatWarningsAsErrors Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    Package version = upstream PhotoCraft version with a two-digit packaging revision (01-99) appended to
+    the patch number: upstream 0.8.2 is published as 0.8.201, then 0.8.202 for a packaging-only fix
+    (`-p:PackageRevision=2`). Upstream 0.9.0 becomes 0.9.1 (leading zeros are dropped), 0.8.12 becomes 0.8.1201.
+  -->
+  <PropertyGroup>
+    <!-- eng/download-cli.cs writes the binaries to runtimes/ and their upstream version to runtimes/.version. -->
+    <PhotoCraftRuntimesDirectory>$(MSBuildThisFileDirectory)runtimes/</PhotoCraftRuntimesDirectory>
+    <PhotoCraftDownloadedVersion Condition="Exists('$(PhotoCraftRuntimesDirectory).version')">$([System.IO.File]::ReadAllText('$(PhotoCraftRuntimesDirectory).version').Trim())</PhotoCraftDownloadedVersion>
+    <PhotoCraftVersion Condition="'$(PhotoCraftVersion)' == ''">$(PhotoCraftDownloadedVersion)</PhotoCraftVersion>
+    <PackageRevision Condition="'$(PackageRevision)' == ''">1</PackageRevision>
+    <_PhotoCraftVersionIsValid>false</_PhotoCraftVersionIsValid>
+    <_PhotoCraftVersionIsValid Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(PhotoCraftVersion)', '^\d+\.\d+\.\d+$')) and $([System.Text.RegularExpressions.Regex]::IsMatch('$(PackageRevision)', '^[1-9]\d?$'))">true</_PhotoCraftVersionIsValid>
+    <Version Condition="$(_PhotoCraftVersionIsValid)">$(PhotoCraftVersion.Split('.')[0]).$(PhotoCraftVersion.Split('.')[1]).$([MSBuild]::Add($([MSBuild]::Multiply($(PhotoCraftVersion.Split('.')[2]), 100)), $(PackageRevision)))</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Miroljub Tomic</Authors>
+    <Copyright>Copyright (c) 2026 Miroljub Tomic</Copyright>
+    <PackageProjectUrl>https://github.com/miroljub1995/artcraft-nuget</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/miroljub1995/artcraft-nuget</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>photocraft;image;psd;cli;native</PackageTags>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,36 @@
+name: CI
+
+# Builds and smoke-tests the packages for the latest upstream PhotoCraft release. Publishing is release.yml.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  latest:
+    name: Latest PhotoCraft release
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.latest.outputs.version }}
+    steps:
+      - id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh release view --repo storytold/photocraft --json tagName --jq .tagName)"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: latest
+    uses: ./.github/workflows/build.yml
+    with:
+      photocraft-version: ${{ needs.latest.outputs.version }}

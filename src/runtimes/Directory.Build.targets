@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)../'))" />
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="/" />
+    <None Include="$(MSBuildThisFileDirectory)PhotoCraft.Runtime.targets" Pack="true" PackagePath="buildTransitive/$(PackageId).targets" />
+  </ItemGroup>
+
+  <!-- The binaries come from eng/download-cli.cs; make sure they're there and of the version being packed. -->
+  <Target Name="_PhotoCraftCheckDownload" BeforeTargets="_GetPackageFiles" DependsOnTargets="_PhotoCraftRequireVersion">
+    <Error Condition="'$(PhotoCraftVersion)' != '$(PhotoCraftDownloadedVersion)'"
+           Text="runtimes/ holds PhotoCraft '$(PhotoCraftDownloadedVersion)', not $(PhotoCraftVersion): run `dotnet run eng/download-cli.cs -- $(PhotoCraftVersion)` first." />
+    <Error Condition="'%(None.Pack)' == 'true' and !Exists('%(None.FullPath)')" Text="%(None.FullPath) is missing: run `dotnet run eng/download-cli.cs -- $(PhotoCraftVersion)` again." />
+  </Target>
+</Project>

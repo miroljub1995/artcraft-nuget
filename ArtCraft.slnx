@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ArtCraft.PhotoCraft.Runtime/ArtCraft.PhotoCraft.Runtime.csproj" />
+    <Project Path="src/ArtCraft.PhotoCraft/ArtCraft.PhotoCraft.csproj" />
+  </Folder>
+  <Folder Name="/src/runtimes/">
+    <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.linux-arm64/ArtCraft.PhotoCraft.Runtime.linux-arm64.csproj" />
+    <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.linux-x64/ArtCraft.PhotoCraft.Runtime.linux-x64.csproj" />
+    <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.osx/ArtCraft.PhotoCraft.Runtime.osx.csproj" />
+    <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.win-arm64/ArtCraft.PhotoCraft.Runtime.win-arm64.csproj" />
+    <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.win-x64/ArtCraft.PhotoCraft.Runtime.win-x64.csproj" />
+    <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.win-x86/ArtCraft.PhotoCraft.Runtime.win-x86.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ArtCraft.PhotoCraft.Tests/ArtCraft.PhotoCraft.Tests.csproj" />
+  </Folder>
+</Solution>

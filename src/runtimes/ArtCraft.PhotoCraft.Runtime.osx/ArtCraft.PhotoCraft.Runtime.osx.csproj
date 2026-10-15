@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <ItemGroup>
+    <None Include="$(PhotoCraftRuntimesDirectory)osx/native/photocraft-cli" Pack="true" PackagePath="runtimes/osx/native/" Visible="false" />
+    <None Include="$(PhotoCraftRuntimesDirectory)osx/licenses/*" Pack="true" PackagePath="licenses/" Visible="false" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    Its own versions, not the repository's: the packages under test, at the package version
+    eng/smoke-test.cs sets in PhotoCraftPackageVersion (e.g. 0.8.201).
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="ArtCraft.PhotoCraft" Version="$(PhotoCraftPackageVersion)" />
+    <PackageVersion Include="ArtCraft.PhotoCraft.Runtime" Version="$(PhotoCraftPackageVersion)" />
+  </ItemGroup>
+</Project>
