@@ -39,6 +39,9 @@ jobs:
       revision: ${{ steps.plan.outputs.revision }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
@@ -49,7 +52,7 @@ jobs:
             versions="$(jq -cn --arg v "${INPUT_VERSION#v}" '[$v]')"
             revision="${INPUT_REVISION:-1}"
           else
-            versions="$(eng/find-missing-releases.sh "$MIN_VERSION" "$MIN_AGE_HOURS")"
+            versions="$(dotnet run eng/find-missing-releases.cs -- "$MIN_VERSION" "$MIN_AGE_HOURS" | tail -n 1)"
             revision=1
           fi
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
@@ -101,7 +104,7 @@ jobs:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
           push() { dotnet nuget push "$1" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate; }
-          # The meta-package ArtCraft.PhotoCraft.Runtime.<version> goes last: find-missing-releases.sh
+          # The meta-package ArtCraft.PhotoCraft.Runtime.<version> goes last: find-missing-releases.cs
           # treats a version as published once it exists, so a run that stops halfway is retried.
           meta=""
           for package in packages/*.nupkg; do
