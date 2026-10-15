@@ -10,7 +10,7 @@ NuGet packages that ship the [PhotoCraft](https://github.com/storytold/photocraf
 
 | Package | What it is |
 |---|---|
-| `ArtCraft.PhotoCraft` | `PhotoCraftCli.GetPath()`: the absolute path of `photocraft-cli` for the current platform (netstandard2.0, net8.0) |
+| `ArtCraft.PhotoCraft` | `PhotoCraftCli.GetPath()`: the absolute path of `photocraft-cli` for the current platform (netstandard2.0: .NET Framework 4.6.2+, .NET 5+) |
 | `ArtCraft.PhotoCraft.Runtime` | Meta-package: depends on every package below (on .NET Framework, only the Windows ones) |
 | `ArtCraft.PhotoCraft.Runtime.linux-x64` / `.linux-arm64` | `runtimes/<rid>/native/photocraft-cli`, glibc 2.35+ |
 | `ArtCraft.PhotoCraft.Runtime.osx` | `runtimes/osx/native/photocraft-cli`, universal (Apple silicon + Intel), macOS 11+ |
