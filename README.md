@@ -81,14 +81,29 @@ for.
 
 ## Building
 
-Needs the .NET 10 SDK. The upstream version is a build input. With it, the runtime projects download that
-release's archives, check them against the release's `SHA256SUMS.txt`, and cache them in `artifacts/download/`.
+Needs the .NET 10 SDK. First download the CLI of the upstream release to package:
 
 ```shell
-dotnet test -c Release                                       # no version needed, nothing is downloaded
-dotnet pack -c Release -p:PhotoCraftVersion=0.8.2            # -> artifacts/package/release/*.0.8.201.nupkg
-dotnet pack -c Release -p:PhotoCraftVersion=0.8.2 -p:PackageRevision=2   # -> *.0.8.202.nupkg
-eng/smoke-test.sh linux-x64 0.8.2                            # installs the packed packages into tests/SmokeTest and runs the CLI
+dotnet run eng/download-cli.cs -- 0.8.2
+```
+
+[`eng/download-cli.cs`](eng/download-cli.cs) fetches the release's archives (cached in `artifacts/download/`),
+checks each against the release's `SHA256SUMS.txt`, and writes the CLI of every platform to `runtimes/` (not in
+git), laid out as it ends up in an app's build output:
+
+```text
+runtimes/.version                         0.8.2, read by the build as the version to package
+runtimes/<rid>/native/photocraft-cli      packed by src/runtimes/ArtCraft.PhotoCraft.Runtime.<rid>
+runtimes/<rid>/licenses/                  licence files of that build
+```
+
+Then:
+
+```shell
+dotnet test -c Release                                # needs no download
+dotnet pack -c Release                                # -> artifacts/package/release/*.0.8.201.nupkg
+dotnet pack -c Release -p:PackageRevision=2           # -> *.0.8.202.nupkg
+eng/smoke-test.sh linux-x64                           # installs the packed packages into tests/SmokeTest and runs the CLI
 ```
 
 ## Releasing

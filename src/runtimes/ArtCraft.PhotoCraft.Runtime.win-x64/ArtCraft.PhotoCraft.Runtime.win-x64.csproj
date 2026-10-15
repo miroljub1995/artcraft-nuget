@@ -1,1 +1,8 @@
-<Project Sdk="Microsoft.Build.NoTargets" />
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <ItemGroup>
+    <None Include="$(PhotoCraftRuntimesDirectory)win-x64/native/photocraft-cli.exe" Pack="true" PackagePath="runtimes/win-x64/native/" Visible="false" />
+    <None Include="$(PhotoCraftRuntimesDirectory)win-x64/licenses/*" Pack="true" PackagePath="licenses/" Visible="false" />
+  </ItemGroup>
+
+</Project>

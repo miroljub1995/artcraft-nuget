@@ -8,16 +8,16 @@
 #   4. PHOTOCRAFT_CLI_PATH override (good and bad path)
 #   5. .NET Framework 4.8 build             -> runtimes/win-*/native/photocraft-cli.exe (run on Windows only)
 #
-# Usage: eng/smoke-test.sh <rid> <photocraft version> [package revision]
+# Usage: eng/smoke-test.sh <rid> [package revision]
 #   rid                 this machine: linux-x64, linux-arm64, osx-arm64, osx-x64, win-x64, win-x86, win-arm64
-#   photocraft version  the upstream version that was packed, e.g. 0.8.2
-#   package revision    1-99 (default 1): 0.8.2 revision 1 is package version 0.8.201
+#   package revision    1-99 (default 1): PhotoCraft 0.8.2 revision 1 is package version 0.8.201
+# The PhotoCraft version is $PHOTOCRAFT_VERSION, else the one eng/download-cli.cs downloaded (runtimes/.version).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RID="${1:?usage: eng/smoke-test.sh <rid> <photocraft version> [package revision]}"
-VERSION="${2:?usage: eng/smoke-test.sh <rid> <photocraft version> [package revision]}"
-REVISION="${3:-1}"
+RID="${1:?usage: eng/smoke-test.sh <rid> [package revision]}"
+REVISION="${2:-1}"
+VERSION="${PHOTOCRAFT_VERSION:-$(cat "$ROOT/runtimes/.version")}"
 IFS=. read -r MAJOR MINOR PATCH <<<"$VERSION"
 PACKAGE_VERSION="$MAJOR.$MINOR.$((PATCH * 100 + REVISION))"
 PROJECT="$ROOT/tests/SmokeTest/SmokeTest.csproj"

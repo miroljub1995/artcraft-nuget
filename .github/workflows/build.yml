@@ -38,10 +38,12 @@ jobs:
         with:
           path: artifacts/download/${{ inputs.photocraft-version }}
           key: photocraft-${{ inputs.photocraft-version }}
-      - run: dotnet build -c Release "-p:PhotoCraftVersion=$PHOTOCRAFT_VERSION" "-p:PackageRevision=$PACKAGE_REVISION"
+      - name: Download the PhotoCraft CLI
+        run: dotnet run eng/download-cli.cs -- "$PHOTOCRAFT_VERSION"
+      - run: dotnet build -c Release "-p:PackageRevision=$PACKAGE_REVISION"
       - run: dotnet test -c Release --no-build
       - run: dotnet format --verify-no-changes --no-restore
-      - run: dotnet pack -c Release --no-build "-p:PhotoCraftVersion=$PHOTOCRAFT_VERSION" "-p:PackageRevision=$PACKAGE_REVISION"
+      - run: dotnet pack -c Release --no-build "-p:PackageRevision=$PACKAGE_REVISION"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: packages-${{ inputs.photocraft-version }}-${{ inputs.package-revision }}
@@ -71,5 +73,5 @@ jobs:
         with:
           name: packages-${{ inputs.photocraft-version }}-${{ inputs.package-revision }}
           path: artifacts/package/release
-      - run: eng/smoke-test.sh "${{ matrix.rid }}" "$PHOTOCRAFT_VERSION" "$PACKAGE_REVISION"
+      - run: eng/smoke-test.sh "${{ matrix.rid }}" "$PACKAGE_REVISION"
         shell: bash
