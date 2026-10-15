@@ -103,7 +103,7 @@ Then:
 dotnet test -c Release                                # needs no download
 dotnet pack -c Release                                # -> artifacts/package/release/*.0.8.201.nupkg
 dotnet pack -c Release -p:PackageRevision=2           # -> *.0.8.202.nupkg
-eng/smoke-test.sh linux-x64                           # installs the packed packages into tests/SmokeTest and runs the CLI
+dotnet run eng/smoke-test.cs -- linux-x64            # installs the packed packages into tests/SmokeTest and runs the CLI
 ```
 
 ## Releasing

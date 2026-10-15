@@ -28,16 +28,24 @@
     NuGet doesn't keep file permissions: it extracts every file as 744, executable by its owner only, so
     an app running as another user (e.g. `app` in the .NET container images) can't start photocraft-cli.
     Make it 755 right after the build or publish copies it, as Microsoft.Playwright does for its node.
-    Building on Windows for Linux can't do this; chmod +x it in the Dockerfile instead.
+    One target per copy: MSBuild runs a target only once per build, and `dotnet publish` copies to the
+    build output first. Building on Windows for Linux can't do this; chmod +x it in the Dockerfile instead.
   -->
-  <Target Name="_PhotoCraftSetExecuteBit" AfterTargets="CopyFilesToOutputDirectory;CopyFilesToPublishDirectory" Condition="'$(OS)' != 'Windows_NT'">
+  <Target Name="_PhotoCraftSetExecuteBitInOutput" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(OS)' != 'Windows_NT'">
     <ItemGroup>
-      <_PhotoCraftCandidate Include="$(OutDir)photocraft-cli;$(OutDir)runtimes/*/native/photocraft-cli" />
-      <_PhotoCraftCandidate Include="$(PublishDir)photocraft-cli;$(PublishDir)runtimes/*/native/photocraft-cli" Condition="'$(PublishDir)' != ''" />
-      <_PhotoCraftExecutable Include="@(_PhotoCraftCandidate->Exists()->Distinct())" />
+      <_PhotoCraftExecutable Include="$(OutDir)photocraft-cli;$(OutDir)runtimes/*/native/photocraft-cli" />
     </ItemGroup>
-    <Exec Condition="'@(_PhotoCraftExecutable)' != ''"
-          Command="chmod +x @(_PhotoCraftExecutable->'&quot;%(FullPath)&quot;', ' ')"
+    <Exec Condition="'@(_PhotoCraftExecutable->Exists())' != ''"
+          Command="chmod +x @(_PhotoCraftExecutable->Exists()->'&quot;%(FullPath)&quot;', ' ')"
+          ContinueOnError="WarnAndContinue" />
+  </Target>
+
+  <Target Name="_PhotoCraftSetExecuteBitInPublish" AfterTargets="CopyFilesToPublishDirectory" Condition="'$(OS)' != 'Windows_NT'">
+    <ItemGroup>
+      <_PhotoCraftPublishedExecutable Include="$(PublishDir)photocraft-cli;$(PublishDir)runtimes/*/native/photocraft-cli" />
+    </ItemGroup>
+    <Exec Condition="'@(_PhotoCraftPublishedExecutable->Exists())' != ''"
+          Command="chmod +x @(_PhotoCraftPublishedExecutable->Exists()->'&quot;%(FullPath)&quot;', ' ')"
           ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>

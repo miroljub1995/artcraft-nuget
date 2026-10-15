@@ -1,7 +1,7 @@
 <Project>
   <!--
     Its own versions, not the repository's: the packages under test, at the package version
-    eng/smoke-test.sh sets in PhotoCraftPackageVersion (e.g. 0.8.201).
+    eng/smoke-test.cs sets in PhotoCraftPackageVersion (e.g. 0.8.201).
   -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>

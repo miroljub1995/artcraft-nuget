@@ -2,7 +2,7 @@
 
   <!--
     Consumes the packed packages from artifacts/package/release like any other app would.
-    Not part of ArtCraft.slnx: pack first, then run eng/smoke-test.sh.
+    Not part of ArtCraft.slnx: pack first, then run eng/smoke-test.cs.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

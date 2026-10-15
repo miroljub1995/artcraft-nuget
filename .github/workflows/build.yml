@@ -73,5 +73,5 @@ jobs:
         with:
           name: packages-${{ inputs.photocraft-version }}-${{ inputs.package-revision }}
           path: artifacts/package/release
-      - run: eng/smoke-test.sh "${{ matrix.rid }}" "$PACKAGE_REVISION"
-        shell: bash
+      # Reads PHOTOCRAFT_VERSION and PACKAGE_REVISION from the environment.
+      - run: dotnet run eng/smoke-test.cs -- ${{ matrix.rid }}
