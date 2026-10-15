@@ -1,6 +1,6 @@
 <Project>
   <!-- Every package is versioned after the upstream release it carries, so packing needs one. -->
-  <Target Name="_PhotoCraftRequireVersion" BeforeTargets="GenerateNuspec" Condition="'$(IsPackable)' == 'true' or '$(PhotoCraftVersion)' != ''">
+  <Target Name="_PhotoCraftRequireVersion" BeforeTargets="GenerateNuspec" Condition="'$(IsPackable)' == 'true'">
     <Error Condition="'$(PhotoCraftVersion)' == ''"
            Text="No PhotoCraft CLI downloaded: run `dotnet run eng/download-cli.cs -- &lt;version&gt;` (e.g. 0.8.2) before packing." />
     <Error Condition="'$(PhotoCraftVersion)' != '' and !$(_PhotoCraftVersionIsValid)"

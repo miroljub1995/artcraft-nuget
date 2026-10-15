@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
     <!-- Everything lands under artifacts/ (bin, obj, package). -->
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <!-- Pinned to the root: nested Directory.Build.props files would otherwise move it. -->
@@ -21,7 +20,7 @@
     (`-p:PackageRevision=2`). Upstream 0.9.0 becomes 0.9.1 (leading zeros are dropped), 0.8.12 becomes 0.8.1201.
   -->
   <PropertyGroup>
-    <!-- Written by eng/download-cli.cs next to the binaries it downloaded. -->
+    <!-- eng/download-cli.cs writes the binaries to runtimes/ and their upstream version to runtimes/.version. -->
     <PhotoCraftRuntimesDirectory>$(MSBuildThisFileDirectory)runtimes/</PhotoCraftRuntimesDirectory>
     <PhotoCraftDownloadedVersion Condition="Exists('$(PhotoCraftRuntimesDirectory).version')">$([System.IO.File]::ReadAllText('$(PhotoCraftRuntimesDirectory).version').Trim())</PhotoCraftDownloadedVersion>
     <PhotoCraftVersion Condition="'$(PhotoCraftVersion)' == ''">$(PhotoCraftDownloadedVersion)</PhotoCraftVersion>
