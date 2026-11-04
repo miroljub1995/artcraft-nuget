@@ -147,7 +147,8 @@ static void Extract(string archive, string executableEntry, string executable, s
         using var zip = ZipFile.OpenRead(archive);
         foreach (var entry in zip.Entries)
         {
-            if (entry.FullName == executableEntry)
+            // Since 0.18.0 the Windows zips have no top-level folder, so the CLI can also sit at the root.
+            if (entry.FullName == executableEntry || entry.FullName == Path.GetFileName(executableEntry))
             {
                 entry.ExtractToFile(executable, overwrite: true);
                 foundExecutable = true;
