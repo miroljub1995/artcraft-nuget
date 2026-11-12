@@ -15,7 +15,7 @@ public sealed class PhotoCraftCliTests : IDisposable
 
     [TestMethod]
     [DataRow("win", Architecture.X64, "win-x64")]
-    [DataRow("win", Architecture.X86, "win-x86")]
+    [DataRow("win", Architecture.X86, null)]
     [DataRow("win", Architecture.Arm64, "win-arm64")]
     [DataRow("linux", Architecture.X64, "linux-x64")]
     [DataRow("linux", Architecture.Arm64, "linux-arm64")]

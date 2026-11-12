@@ -8,7 +8,7 @@
 //   5. .NET Framework 4.8 build             -> runtimes/win-*/native/photocraft-cli.exe (run on Windows only)
 //
 // Usage: dotnet run eng/smoke-test.cs -- <rid> [package revision]
-//   rid                this machine: linux-x64, linux-arm64, osx-arm64, osx-x64, win-x64, win-x86, win-arm64
+//   rid                this machine: linux-x64, linux-arm64, osx-arm64, osx-x64, win-x64, win-arm64
 //   package revision   1-99, default $PACKAGE_REVISION or 1
 // The PhotoCraft version is $PHOTOCRAFT_VERSION, else the one eng/download-cli.cs downloaded (runtimes/.version).
 #:package CliWrap
@@ -88,7 +88,7 @@ try
     Step("5. .NET Framework 4.8 build: runtimes/win-*/native/photocraft-cli.exe");
     var netfx = Path.Combine(output, "netfx");
     await RunAsync("dotnet", "build", project, "-c", "Release", "-f", "net48", "-o", netfx);
-    foreach (var windowsRid in new[] { "win-x64", "win-x86", "win-arm64" })
+    foreach (var windowsRid in new[] { "win-x64", "win-arm64" })
     {
         Expect(File.Exists(Path.Combine(netfx, "runtimes", windowsRid, "native", "photocraft-cli.exe")),
             $"net48 output lacks runtimes/{windowsRid}/native/photocraft-cli.exe");
