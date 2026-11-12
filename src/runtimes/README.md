@@ -14,7 +14,6 @@ taken unmodified from the official GitHub release and checked against the SHA-25
 | `ArtCraft.PhotoCraft.Runtime.linux-arm64` | `runtimes/linux-arm64/native/photocraft-cli` (needs glibc 2.35+) |
 | `ArtCraft.PhotoCraft.Runtime.osx` | `runtimes/osx/native/photocraft-cli` (universal: Apple silicon and Intel, macOS 11+) |
 | `ArtCraft.PhotoCraft.Runtime.win-x64` | `runtimes/win-x64/native/photocraft-cli.exe` |
-| `ArtCraft.PhotoCraft.Runtime.win-x86` | `runtimes/win-x86/native/photocraft-cli.exe` |
 | `ArtCraft.PhotoCraft.Runtime.win-arm64` | `runtimes/win-arm64/native/photocraft-cli.exe` |
 
 Find the executable with the `ArtCraft.PhotoCraft` package:

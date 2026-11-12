@@ -110,7 +110,6 @@ public static class PhotoCraftCli
     internal static string? GetRuntimeIdentifier(string? os, Architecture architecture) => (os, architecture) switch
     {
         ("win", Architecture.X64) => "win-x64",
-        ("win", Architecture.X86) => "win-x86",
         ("win", Architecture.Arm64) => "win-arm64",
         ("linux", Architecture.X64) => "linux-x64",
         ("linux", Architecture.Arm64) => "linux-arm64",

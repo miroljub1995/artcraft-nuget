@@ -33,7 +33,6 @@ var releaseUrl = $"https://github.com/storytold/photocraft/releases/download/v{v
     ("linux-arm64", $"photocraft-{version}-linux-aarch64.tar.gz", $"photocraft-{version}-linux-aarch64/bin/photocraft-cli"),
     ("osx", $"photocraft-cli-{version}-macos-universal.zip", $"photocraft-cli-{version}-macos-universal/photocraft-cli"),
     ("win-x64", $"photocraft-{version}-windows-x64-portable.zip", $"photocraft-{version}-windows-x64-portable/photocraft-cli.exe"),
-    ("win-x86", $"photocraft-{version}-windows-x86-portable.zip", $"photocraft-{version}-windows-x86-portable/photocraft-cli.exe"),
     ("win-arm64", $"photocraft-{version}-windows-arm64-portable.zip", $"photocraft-{version}-windows-arm64-portable/photocraft-cli.exe"),
 ];
 

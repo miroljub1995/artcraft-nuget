@@ -33,7 +33,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.win-x64/ArtCraft.PhotoCraft.Runtime.win-x64.csproj" />
-    <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.win-x86/ArtCraft.PhotoCraft.Runtime.win-x86.csproj" />
     <ProjectReference Include="../runtimes/ArtCraft.PhotoCraft.Runtime.win-arm64/ArtCraft.PhotoCraft.Runtime.win-arm64.csproj" />
   </ItemGroup>
 

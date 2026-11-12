@@ -14,7 +14,7 @@ NuGet packages that ship the [PhotoCraft](https://github.com/storytold/photocraf
 | `ArtCraft.PhotoCraft.Runtime` | Meta-package: depends on every package below (on .NET Framework, only the Windows ones) |
 | `ArtCraft.PhotoCraft.Runtime.linux-x64` / `.linux-arm64` | `runtimes/<rid>/native/photocraft-cli`, glibc 2.35+ |
 | `ArtCraft.PhotoCraft.Runtime.osx` | `runtimes/osx/native/photocraft-cli`, universal (Apple silicon + Intel), macOS 11+ |
-| `ArtCraft.PhotoCraft.Runtime.win-x64` / `.win-x86` / `.win-arm64` | `runtimes/<rid>/native/photocraft-cli.exe` |
+| `ArtCraft.PhotoCraft.Runtime.win-x64` / `.win-arm64` | `runtimes/<rid>/native/photocraft-cli.exe` |
 
 ### Versions
 

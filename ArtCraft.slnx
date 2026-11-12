@@ -9,7 +9,6 @@
     <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.osx/ArtCraft.PhotoCraft.Runtime.osx.csproj" />
     <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.win-arm64/ArtCraft.PhotoCraft.Runtime.win-arm64.csproj" />
     <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.win-x64/ArtCraft.PhotoCraft.Runtime.win-x64.csproj" />
-    <Project Path="src/runtimes/ArtCraft.PhotoCraft.Runtime.win-x86/ArtCraft.PhotoCraft.Runtime.win-x86.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ArtCraft.PhotoCraft.Tests/ArtCraft.PhotoCraft.Tests.csproj" />
